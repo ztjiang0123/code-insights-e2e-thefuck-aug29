@@ -3,14 +3,14 @@ from ..system import init_output
 
 init_output()
 
-import os  # noqa: E402
-import sys  # noqa: E402
-from .. import logs  # noqa: E402
-from ..argument_parser import Parser  # noqa: E402
-from ..utils import get_installation_version  # noqa: E402
-from ..shells import shell  # noqa: E402
-from .alias import print_alias  # noqa: E402
-from .fix_command import fix_command  # noqa: E402
+import os
+import sys
+from .. import logs
+from ..argument_parser import Parser
+from ..utils import get_installation_version
+from ..shells import shell
+from .alias import print_alias
+from .fix_command import fix_command
 
 
 def main():
@@ -31,7 +31,7 @@ def main():
         fix_command(known_args)
     elif known_args.shell_logger:
         try:
-            from .shell_logger import shell_logger  # noqa: E402
+            from .shell_logger import shell_logger
         except ImportError:
             logs.warn('Shell logger supports only Linux and macOS')
         else:

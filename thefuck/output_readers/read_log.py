@@ -12,6 +12,14 @@ from ..exceptions import ScriptNotInLog
 from .. import const, logs
 
 
+def _advance_ps1_counter(ps1_newlines, ps1_counter):
+    if ps1_newlines <= 0:
+        return ps1_counter
+    if ps1_counter <= 0:
+        return ps1_newlines
+    return ps1_counter - 1
+
+
 def _group_by_calls(log):
     ps1 = os.environ['PS1']
     ps1_newlines = ps1.count('\\n') + ps1.count('\n')
@@ -20,20 +28,19 @@ def _group_by_calls(log):
     script_line = None
     lines = []
     for line in log:
-        if const.USER_COMMAND_MARK in line or ps1_counter > 0:
-            if script_line and ps1_counter == 0:
-                yield script_line, lines
+        is_command_start = const.USER_COMMAND_MARK in line or ps1_counter > 0
+        if not is_command_start:
+            if script_line is not None:
+                lines.append(line)
+            continue
 
-            if ps1_newlines > 0:
-                if ps1_counter <= 0:
-                    ps1_counter = ps1_newlines
-                else:
-                    ps1_counter -= 1
+        if script_line and ps1_counter == 0:
+            yield script_line, lines
 
-            script_line = line
-            lines = [line]
-        elif script_line is not None:
-            lines.append(line)
+        ps1_counter = _advance_ps1_counter(ps1_newlines, ps1_counter)
+
+        script_line = line
+        lines = [line]
 
     if script_line:
         yield script_line, lines

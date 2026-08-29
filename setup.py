@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 import pkg_resources
 import sys
 import os
-import fastentrypoints
+import fastentrypoints  # noqa: F401  # monkey-patches setuptools on import
 
 
 try:
