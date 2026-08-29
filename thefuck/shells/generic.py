@@ -12,6 +12,13 @@ from ..system import Path
 ShellConfiguration = namedtuple('ShellConfiguration', (
     'content', 'path', 'reload', 'can_configure_automatically'))
 
+# Shell-specific pieces of the ``thefuck`` function alias built by
+# ``Generic._build_app_alias``. Function-based shells (Bash, Zsh) share the
+# alias structure and differ only in these fields.
+FunctionAlias = namedtuple('FunctionAlias', (
+    'shell', 'function_keyword', 'alias_expression', 'history_expression',
+    'forwarded_args', 'eval_command', 'alter_history'))
+
 
 class Generic(object):
     friendly_name = 'Generic Shell'
@@ -39,23 +46,13 @@ class Generic(object):
         return """alias {0}='eval "$(TF_ALIAS={0} PYTHONIOENCODING=utf-8 """ \
                """thefuck "$(fc -ln -1)")"'""".format(alias_name)
 
-    def _build_app_alias(self, alias_name, shell, function_keyword,
-                         alias_expression, history_expression,
-                         forwarded_args, eval_command, alter_history):
+    def _build_app_alias(self, alias_name, spec):
         """Builds a POSIX-style ``thefuck`` shell function alias.
 
         Shells that expose ``thefuck`` as a function (Bash, Zsh) share the same
-        alias structure and differ only in a handful of syntactic details. Each
-        shell supplies those details here instead of carrying its own copy of
-        the whole template.
-
-        :param shell: value exported as ``TF_SHELL`` (e.g. ``'bash'``)
-        :param function_keyword: leading keyword before the function name
-        :param alias_expression: snippet that captures/exports ``TF_SHELL_ALIASES``
-        :param history_expression: snippet that captures/exports ``TF_HISTORY``
-        :param forwarded_args: how positional args are forwarded (``'"$@"'`` / ``'$@'``)
-        :param eval_command: how the fixed command is passed to ``eval``
-        :param alter_history: snippet that persists the fixed command, or ``''``
+        alias structure and differ only in a handful of syntactic details, which
+        each shell supplies via a :class:`FunctionAlias` ``spec`` instead of
+        carrying its own copy of the whole template.
 
         """
         from ..const import ARGUMENT_PLACEHOLDER
@@ -77,15 +74,15 @@ class Generic(object):
                 {alter_history}
             }}
         '''.format(
-            function_keyword=function_keyword,
+            function_keyword=spec.function_keyword,
             name=alias_name,
-            shell=shell,
-            alias_expression=alias_expression,
-            history_expression=history_expression,
+            shell=spec.shell,
+            alias_expression=spec.alias_expression,
+            history_expression=spec.history_expression,
             argument_placeholder=ARGUMENT_PLACEHOLDER,
-            forwarded_args=forwarded_args,
-            eval_command=eval_command,
-            alter_history=alter_history)
+            forwarded_args=spec.forwarded_args,
+            eval_command=spec.eval_command,
+            alter_history=spec.alter_history)
 
     def instant_mode_alias(self, alias_name):
         warn("Instant mode not supported by your shell")

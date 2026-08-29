@@ -5,15 +5,14 @@ from uuid import uuid4
 from ..conf import settings
 from ..const import USER_COMMAND_MARK
 from ..utils import DEVNULL, memoize
-from .generic import Generic
+from .generic import Generic, FunctionAlias
 
 
 class Bash(Generic):
     friendly_name = 'Bash'
 
     def app_alias(self, alias_name):
-        return self._build_app_alias(
-            alias_name,
+        return self._build_app_alias(alias_name, FunctionAlias(
             shell='bash',
             function_keyword='function ',
             alias_expression='export TF_SHELL_ALIASES=$(alias);',
@@ -21,7 +20,7 @@ class Bash(Generic):
             forwarded_args='"$@"',
             eval_command='"$TF_CMD"',
             alter_history=('history -s $TF_CMD;'
-                           if settings.alter_history else ''))
+                           if settings.alter_history else '')))
 
     def instant_mode_alias(self, alias_name):
         if os.environ.get('THEFUCK_INSTANT_MODE', '').lower() == 'true':
