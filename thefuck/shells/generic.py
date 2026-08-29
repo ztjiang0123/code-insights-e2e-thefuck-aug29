@@ -39,18 +39,52 @@ class Generic(object):
         return """alias {0}='eval "$(TF_ALIAS={0} PYTHONIOENCODING=utf-8 """ \
                """thefuck "$(fc -ln -1)")"'""".format(alias_name)
 
-    def _format_app_alias(self, alias_template, alias_name, alter_history):
-        """Fills a shell function alias template with the common fields.
+    def _build_app_alias(self, alias_name, shell, function_keyword,
+                         alias_expression, history_expression,
+                         forwarded_args, eval_command, alter_history):
+        """Builds a POSIX-style ``thefuck`` shell function alias.
 
-        Shared by shells whose ``app_alias`` differs only in the surrounding
-        function body and history-persistence snippet.
+        Shells that expose ``thefuck`` as a function (Bash, Zsh) share the same
+        alias structure and differ only in a handful of syntactic details. Each
+        shell supplies those details here instead of carrying its own copy of
+        the whole template.
+
+        :param shell: value exported as ``TF_SHELL`` (e.g. ``'bash'``)
+        :param function_keyword: leading keyword before the function name
+        :param alias_expression: snippet that captures/exports ``TF_SHELL_ALIASES``
+        :param history_expression: snippet that captures/exports ``TF_HISTORY``
+        :param forwarded_args: how positional args are forwarded (``'"$@"'`` / ``'$@'``)
+        :param eval_command: how the fixed command is passed to ``eval``
+        :param alter_history: snippet that persists the fixed command, or ``''``
 
         """
         from ..const import ARGUMENT_PLACEHOLDER
 
-        return alias_template.format(
+        # It is VERY important to have the variables declared WITHIN the function
+        return '''
+            {function_keyword}{name} () {{
+                TF_PYTHONIOENCODING=$PYTHONIOENCODING;
+                export TF_SHELL={shell};
+                export TF_ALIAS={name};
+                {alias_expression}
+                {history_expression}
+                export PYTHONIOENCODING=utf-8;
+                TF_CMD=$(
+                    thefuck {argument_placeholder} {forwarded_args}
+                ) && eval {eval_command};
+                unset TF_HISTORY;
+                export PYTHONIOENCODING=$TF_PYTHONIOENCODING;
+                {alter_history}
+            }}
+        '''.format(
+            function_keyword=function_keyword,
             name=alias_name,
+            shell=shell,
+            alias_expression=alias_expression,
+            history_expression=history_expression,
             argument_placeholder=ARGUMENT_PLACEHOLDER,
+            forwarded_args=forwarded_args,
+            eval_command=eval_command,
             alter_history=alter_history)
 
     def instant_mode_alias(self, alias_name):

@@ -12,26 +12,16 @@ class Bash(Generic):
     friendly_name = 'Bash'
 
     def app_alias(self, alias_name):
-        # It is VERY important to have the variables declared WITHIN the function
-        alias_template = '''
-            function {name} () {{
-                TF_PYTHONIOENCODING=$PYTHONIOENCODING;
-                export TF_SHELL=bash;
-                export TF_ALIAS={name};
-                export TF_SHELL_ALIASES=$(alias);
-                export TF_HISTORY=$(fc -ln -10);
-                export PYTHONIOENCODING=utf-8;
-                TF_CMD=$(
-                    thefuck {argument_placeholder} "$@"
-                ) && eval "$TF_CMD";
-                unset TF_HISTORY;
-                export PYTHONIOENCODING=$TF_PYTHONIOENCODING;
-                {alter_history}
-            }}
-        '''
-        alter_history = ('history -s $TF_CMD;'
-                         if settings.alter_history else '')
-        return self._format_app_alias(alias_template, alias_name, alter_history)
+        return self._build_app_alias(
+            alias_name,
+            shell='bash',
+            function_keyword='function ',
+            alias_expression='export TF_SHELL_ALIASES=$(alias);',
+            history_expression='export TF_HISTORY=$(fc -ln -10);',
+            forwarded_args='"$@"',
+            eval_command='"$TF_CMD"',
+            alter_history=('history -s $TF_CMD;'
+                           if settings.alter_history else ''))
 
     def instant_mode_alias(self, alias_name):
         if os.environ.get('THEFUCK_INSTANT_MODE', '').lower() == 'true':
