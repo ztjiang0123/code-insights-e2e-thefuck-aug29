@@ -1,10 +1,11 @@
 from thefuck.utils import for_app
+from thefuck.specific.brew import match_brew_subcommand
 
 
 @for_app('brew', at_least=2)
 def match(command):
-    return (command.script_parts[1] in ['uninstall', 'rm', 'remove']
-            and "brew uninstall --force" in command.output)
+    return match_brew_subcommand(
+        command, ['uninstall', 'rm', 'remove'], "brew uninstall --force")
 
 
 def get_new_command(command):

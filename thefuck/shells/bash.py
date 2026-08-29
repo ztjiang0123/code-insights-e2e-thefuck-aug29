@@ -3,7 +3,7 @@ from subprocess import Popen, PIPE
 from tempfile import gettempdir
 from uuid import uuid4
 from ..conf import settings
-from ..const import ARGUMENT_PLACEHOLDER, USER_COMMAND_MARK
+from ..const import USER_COMMAND_MARK
 from ..utils import DEVNULL, memoize
 from .generic import Generic
 
@@ -13,7 +13,7 @@ class Bash(Generic):
 
     def app_alias(self, alias_name):
         # It is VERY important to have the variables declared WITHIN the function
-        return '''
+        alias_template = '''
             function {name} () {{
                 TF_PYTHONIOENCODING=$PYTHONIOENCODING;
                 export TF_SHELL=bash;
@@ -28,11 +28,10 @@ class Bash(Generic):
                 export PYTHONIOENCODING=$TF_PYTHONIOENCODING;
                 {alter_history}
             }}
-        '''.format(
-            name=alias_name,
-            argument_placeholder=ARGUMENT_PLACEHOLDER,
-            alter_history=('history -s $TF_CMD;'
-                           if settings.alter_history else ''))
+        '''
+        alter_history = ('history -s $TF_CMD;'
+                         if settings.alter_history else '')
+        return self._format_app_alias(alias_template, alias_name, alter_history)
 
     def instant_mode_alias(self, alias_name):
         if os.environ.get('THEFUCK_INSTANT_MODE', '').lower() == 'true':

@@ -39,6 +39,20 @@ class Generic(object):
         return """alias {0}='eval "$(TF_ALIAS={0} PYTHONIOENCODING=utf-8 """ \
                """thefuck "$(fc -ln -1)")"'""".format(alias_name)
 
+    def _format_app_alias(self, alias_template, alias_name, alter_history):
+        """Fills a shell function alias template with the common fields.
+
+        Shared by shells whose ``app_alias`` differs only in the surrounding
+        function body and history-persistence snippet.
+
+        """
+        from ..const import ARGUMENT_PLACEHOLDER
+
+        return alias_template.format(
+            name=alias_name,
+            argument_placeholder=ARGUMENT_PLACEHOLDER,
+            alter_history=alter_history)
+
     def instant_mode_alias(self, alias_name):
         warn("Instant mode not supported by your shell")
         return self.app_alias(alias_name)
