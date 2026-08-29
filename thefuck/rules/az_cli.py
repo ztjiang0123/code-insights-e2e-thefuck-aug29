@@ -1,6 +1,4 @@
-import re
-
-from thefuck.utils import for_app, replace_argument
+from thefuck.utils import for_app, get_valid_choices_command
 
 INVALID_CHOICE = "(?=az)(?:.*): '(.*)' is not in the '.*' command group."
 OPTIONS = "^The most similar choice to '.*' is:\n\\s*(.*)$"
@@ -12,6 +10,5 @@ def match(command):
 
 
 def get_new_command(command):
-    mistake = re.search(INVALID_CHOICE, command.output).group(1)
-    options = re.findall(OPTIONS, command.output, flags=re.MULTILINE)
-    return [replace_argument(command.script, mistake, o) for o in options]
+    return get_valid_choices_command(command, INVALID_CHOICE, OPTIONS,
+                                     mistake_group=1)

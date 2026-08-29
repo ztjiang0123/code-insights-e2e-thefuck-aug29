@@ -19,6 +19,13 @@ def match(command):
             _get_wrong_command(command.script_parts))
 
 
+def _split_commands(line):
+    for command in line.split(', '):
+        stripped = command.strip()
+        if stripped:
+            yield stripped
+
+
 @eager
 def _get_available_commands(stdout):
     commands_listing = False
@@ -29,10 +36,7 @@ def _get_available_commands(stdout):
             if not line:
                 break
 
-            for command in line.split(', '):
-                stripped = command.strip()
-                if stripped:
-                    yield stripped
+            yield from _split_commands(line)
 
 
 def get_new_command(command):

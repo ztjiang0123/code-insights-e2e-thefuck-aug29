@@ -144,6 +144,23 @@ def replace_argument(script, from_, to):
             u' {} '.format(from_), u' {} '.format(to), 1)
 
 
+def get_valid_choices_command(command, invalid_choice_pattern, options_pattern,
+                              mistake_group=0):
+    """Builds corrected commands for CLIs that print an invalid choice and a
+    list of suggested options (e.g. ``aws`` and ``az``).
+
+    :type command: thefuck.types.Command
+    :param invalid_choice_pattern: regex matching the mistyped argument
+    :param options_pattern: regex matching each suggested option
+    :param mistake_group: capture group holding the mistake in the choice regex
+    :rtype: list[str]
+
+    """
+    mistake = re.search(invalid_choice_pattern, command.output).group(mistake_group)
+    options = re.findall(options_pattern, command.output, flags=re.MULTILINE)
+    return [replace_argument(command.script, mistake, o) for o in options]
+
+
 @decorator
 def eager(fn, *args, **kwargs):
     return list(fn(*args, **kwargs))
