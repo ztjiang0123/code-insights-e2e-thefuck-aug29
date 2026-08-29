@@ -3,17 +3,17 @@ from ..system import init_output
 
 init_output()
 
-import getpass  # noqa: E402
-import os  # noqa: E402
-import json  # noqa: E402
-from tempfile import gettempdir  # noqa: E402
-import time  # noqa: E402
-import six  # noqa: E402
-from psutil import Process  # noqa: E402
-from .. import logs, const  # noqa: E402
-from ..shells import shell  # noqa: E402
-from ..conf import settings  # noqa: E402
-from ..system import Path  # noqa: E402
+import getpass
+import os
+import json
+from tempfile import gettempdir
+import time
+import six
+from psutil import Process
+from .. import logs, const
+from ..shells import shell
+from ..conf import settings
+from ..system import Path
 
 
 def _get_shell_pid():
