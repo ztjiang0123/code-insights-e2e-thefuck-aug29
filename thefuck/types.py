@@ -1,5 +1,6 @@
 import os
 import sys
+from collections import namedtuple
 from . import logs
 from .shells import shell
 from .conf import settings, load_source
@@ -82,30 +83,29 @@ class Command(object):
         return cls(expanded, output)
 
 
+#: Groups the fields that define a rule so they travel together instead of
+#: being passed around as a long positional parameter list.
+RuleSpec = namedtuple('RuleSpec', ('name', 'match', 'get_new_command',
+                                   'enabled_by_default', 'side_effect',
+                                   'priority', 'requires_output'))
+
+
 class Rule(object):
     """Rule for fixing commands."""
 
-    def __init__(self, name, match, get_new_command,
-                 enabled_by_default, side_effect,
-                 priority, requires_output):
-        """Initializes rule with given fields.
+    def __init__(self, spec):
+        """Initializes rule from its specification.
 
-        :type name: basestring
-        :type match: (Command) -> bool
-        :type get_new_command: (Command) -> (basestring | [basestring])
-        :type enabled_by_default: boolean
-        :type side_effect: (Command, basestring) -> None
-        :type priority: int
-        :type requires_output: bool
+        :type spec: RuleSpec
 
         """
-        self.name = name
-        self.match = match
-        self.get_new_command = get_new_command
-        self.enabled_by_default = enabled_by_default
-        self.side_effect = side_effect
-        self.priority = priority
-        self.requires_output = requires_output
+        self.name = spec.name
+        self.match = spec.match
+        self.get_new_command = spec.get_new_command
+        self.enabled_by_default = spec.enabled_by_default
+        self.side_effect = spec.side_effect
+        self.priority = spec.priority
+        self.requires_output = spec.requires_output
 
     def __eq__(self, other):
         if isinstance(other, Rule):
@@ -145,12 +145,14 @@ class Rule(object):
                 logs.exception(u"Rule {} failed to load".format(name), sys.exc_info())
                 return
         priority = getattr(rule_module, 'priority', DEFAULT_PRIORITY)
-        return cls(name, rule_module.match,
-                   rule_module.get_new_command,
-                   getattr(rule_module, 'enabled_by_default', True),
-                   getattr(rule_module, 'side_effect', None),
-                   settings.priority.get(name, priority),
-                   getattr(rule_module, 'requires_output', True))
+        return cls(RuleSpec(
+            name=name,
+            match=rule_module.match,
+            get_new_command=rule_module.get_new_command,
+            enabled_by_default=getattr(rule_module, 'enabled_by_default', True),
+            side_effect=getattr(rule_module, 'side_effect', None),
+            priority=settings.priority.get(name, priority),
+            requires_output=getattr(rule_module, 'requires_output', True)))
 
     @property
     def is_enabled(self):
