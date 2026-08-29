@@ -45,29 +45,33 @@ def memoize(fn):
 memoize.disabled = False
 
 
+def _is_exe(fpath):
+    return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+
+
+def _which_fallback(program):
+    """Locates `program` on the `PATH` when `shutil.which` is unavailable."""
+    fpath, _ = os.path.split(program)
+    if fpath:
+        return program if _is_exe(program) else None
+
+    for path in os.environ["PATH"].split(os.pathsep):
+        exe_file = os.path.join(path.strip('"'), program)
+        if _is_exe(exe_file):
+            return exe_file
+
+    return None
+
+
 @memoize
 def which(program):
     """Returns `program` path or `None`."""
     try:
-        from shutil import which
-
-        return which(program)
+        from shutil import which as shutil_which
     except ImportError:
-        def is_exe(fpath):
-            return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+        return _which_fallback(program)
 
-        fpath, fname = os.path.split(program)
-        if fpath:
-            if is_exe(program):
-                return program
-        else:
-            for path in os.environ["PATH"].split(os.pathsep):
-                path = path.strip('"')
-                exe_file = os.path.join(path, program)
-                if is_exe(exe_file):
-                    return exe_file
-
-        return None
+    return shutil_which(program)
 
 
 def default_settings(params):
@@ -186,6 +190,23 @@ def replace_command(command, broken, matched):
     new_cmds = get_close_matches(broken, matched, cutoff=0.1)
     return [replace_argument(command.script, broken, new_cmd.strip())
             for new_cmd in new_cmds]
+
+
+def replace_argument_from_output(command, suggestion_pattern):
+    """Corrects the mistyped subcommand using a suggestion parsed from output.
+
+    Reads the mistyped argument from ``command.script_parts[1]`` and replaces
+    it with the first match of ``suggestion_pattern`` in ``command.output``.
+
+    :type command: thefuck.types.Command
+    :param suggestion_pattern: regex whose first group holds the suggestion
+    :rtype: str
+
+    """
+    broken = command.script_parts[1]
+    fix = re.findall(suggestion_pattern, command.output)[0]
+
+    return replace_argument(command.script, broken, fix)
 
 
 @memoize

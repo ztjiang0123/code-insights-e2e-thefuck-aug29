@@ -25,18 +25,23 @@ def match(command):
     return bool(_get_destination(command))
 
 
+def _get_absolute_paths_from_line(line):
+    for param in shell.split_command(line)[1:]:
+        if not (param.startswith('/') or param.startswith('~')):
+            continue
+
+        if param.endswith('/'):
+            param = param[:-1]
+
+        yield param
+
+
 def _get_all_absolute_paths_from_history(command):
     counter = Counter()
 
     for line in get_valid_history_without_current(command):
-        splitted = shell.split_command(line)
-
-        for param in splitted[1:]:
-            if param.startswith('/') or param.startswith('~'):
-                if param.endswith('/'):
-                    param = param[:-1]
-
-                counter[param] += 1
+        for param in _get_absolute_paths_from_line(line):
+            counter[param] += 1
 
     return (path for path, _ in counter.most_common(None))
 

@@ -4,38 +4,26 @@ from subprocess import Popen, PIPE
 from tempfile import gettempdir
 from uuid import uuid4
 from ..conf import settings
-from ..const import ARGUMENT_PLACEHOLDER, USER_COMMAND_MARK
+from ..const import USER_COMMAND_MARK
 from ..utils import DEVNULL, memoize
-from .generic import Generic
+from .generic import Generic, FunctionAlias
 
 
 class Zsh(Generic):
     friendly_name = 'ZSH'
 
     def app_alias(self, alias_name):
-        # It is VERY important to have the variables declared WITHIN the function
-        return '''
-            {name} () {{
-                TF_PYTHONIOENCODING=$PYTHONIOENCODING;
-                export TF_SHELL=zsh;
-                export TF_ALIAS={name};
-                TF_SHELL_ALIASES=$(alias);
-                export TF_SHELL_ALIASES;
-                TF_HISTORY="$(fc -ln -10)";
-                export TF_HISTORY;
-                export PYTHONIOENCODING=utf-8;
-                TF_CMD=$(
-                    thefuck {argument_placeholder} $@
-                ) && eval $TF_CMD;
-                unset TF_HISTORY;
-                export PYTHONIOENCODING=$TF_PYTHONIOENCODING;
-                {alter_history}
-            }}
-        '''.format(
-            name=alias_name,
-            argument_placeholder=ARGUMENT_PLACEHOLDER,
+        return self._build_app_alias(alias_name, FunctionAlias(
+            shell='zsh',
+            function_keyword='',
+            alias_expression=('TF_SHELL_ALIASES=$(alias);\n'
+                              '                export TF_SHELL_ALIASES;'),
+            history_expression=('TF_HISTORY="$(fc -ln -10)";\n'
+                                '                export TF_HISTORY;'),
+            forwarded_args='$@',
+            eval_command='$TF_CMD',
             alter_history=('test -n "$TF_CMD" && print -s $TF_CMD'
-                           if settings.alter_history else ''))
+                           if settings.alter_history else '')))
 
     def instant_mode_alias(self, alias_name):
         if os.environ.get('THEFUCK_INSTANT_MODE', '').lower() == 'true':
